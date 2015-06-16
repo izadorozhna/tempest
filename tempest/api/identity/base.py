@@ -73,7 +73,7 @@ class BaseIdentityV2Test(BaseIdentityTest):
     @classmethod
     def setup_clients(cls):
         super(BaseIdentityV2Test, cls).setup_clients()
-        cls.non_admin_client = cls.os.identity_client
+        cls.non_admin_client = cls.os.identity_public_client
         cls.non_admin_token_client = cls.os.token_client
 
     @classmethod
@@ -93,6 +93,7 @@ class BaseIdentityV2AdminTest(BaseIdentityV2Test):
     def setup_clients(cls):
         super(BaseIdentityV2AdminTest, cls).setup_clients()
         cls.client = cls.os_adm.identity_client
+        cls.non_admin_client = cls.os.identity_client
         cls.token_client = cls.os_adm.token_client
 
     @classmethod
