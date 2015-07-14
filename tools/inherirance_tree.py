@@ -15,13 +15,11 @@
 #    under the License.
 
 import pprint
-import sys
 import unittest
-from optparse import OptionParser
-import inspect
+import json
 
 import check_uuid as cu
-import tempest.api.identity as t
+import tempest as t
 
 pkg = t
 checker = cu.TestChecker(pkg)
@@ -32,31 +30,41 @@ def is_test_method(method):
     return method.startswith('test_')
 
 
-def inheritors(parent_class):
-    subclasses = set()
-    work = [parent_class]
-    while work:
-        parent = work.pop()
-        for child in parent.__subclasses__():
-            if child not in subclasses:
-                subclasses.add(child)
-                work.append(child)
-    return subclasses
+def inheritors(parent_class, n):
+    res = {}
+    subs = parent_class.__subclasses__()
+    res['class'] = parent_class
+    res['children'] = []
+    res['methods'] = []
+    all_test_methods = dict(parent_class.__dict__).keys()
+    for method in all_test_methods:
+        if is_test_method(method):
+            res['methods'].append(method)
+    for sub in subs:
+        sub_res, _ = inheritors(sub, n)
+        res['children'].append(sub_res)
+    if not res['children']:
+        del res['children']
+    if not res['methods']:
+        n.append(parent_class)
+        del res['methods']
+    return res, n
 
+res = {}
+no_methods = []
+a, no_methods = inheritors(unittest.TestCase, no_methods)
+pprint.pprint(a)
+print '\n----------------------------------------------------------'
+pprint.pprint(no_methods)
+f_res = json.dumps(str(a))
 
-def filter_all_children(test_class):
-    inheritors_all = inheritors(test_class)
-    children = sorted(list(inheritors_all))
-    filtered_child = []
-    for child in children:
-        all_test_methods = dict(child.__dict__).keys()
-        for method in all_test_methods:
-            if is_test_method(method):
-                # print child, method
-                filtered_child.append(child)
-    return filtered_child
+output_file = 'res.json'
+with open(output_file, 'w') as outf:
+    outf.write(f_res)
 
-
-all_children = filter_all_children(unittest.TestCase)
-pprint.pprint(all_children)
+output_file = 'without_tests.txt'
+with open(output_file, 'w') as outf:
+    for n in no_methods:
+        outf.writelines(str(n))
+        outf.writelines("\n")
 

@@ -345,16 +345,17 @@ def run():
     checker = TestChecker(pkg)
     errors = False
     tests = checker.get_tests()
-    untagged = checker.find_untagged(tests)
-    errors = checker.report_collisions(tests) or errors
-    if args.fix_tests and untagged:
-        checker.fix_tests(untagged)
-    else:
-        errors = checker.report_untagged(untagged) or errors
-    if errors:
-        sys.exit("@test.idempotent_id existence and uniqueness checks failed\n"
-                 "Run 'tox -v -euuidgen' to automatically fix tests with\n"
-                 "missing @test.idempotent_id decorators.")
+    print len(tests)
+    # untagged = checker.find_untagged(tests)
+    # errors = checker.report_collisions(tests) or errors
+    # if args.fix_tests and untagged:
+    #     checker.fix_tests(untagged)
+    # else:
+    #     errors = checker.report_untagged(untagged) or errors
+    # if errors:
+    #     sys.exit("@test.idempotent_id existence and uniqueness checks failed\n"
+    #              "Run 'tox -v -euuidgen' to automatically fix tests with\n"
+    #              "missing @test.idempotent_id decorators.")
 
 if __name__ == '__main__':
     run()
