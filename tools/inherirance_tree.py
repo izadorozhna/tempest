@@ -17,6 +17,8 @@
 import pprint
 import unittest
 import json
+import testtools
+import inspect
 
 import check_uuid as cu
 import tempest as t
@@ -28,6 +30,15 @@ tests = checker.get_tests()
 
 def is_test_method(method):
     return method.startswith('test_')
+
+
+def does_class_have_testmethods(class_name):
+    all_test_methods = dict(class_name.__dict__).keys()
+    for method in all_test_methods:
+        if is_test_method(method):
+            return True
+    else:
+        return False
 
 
 def inheritors(parent_class, n):
@@ -43,28 +54,58 @@ def inheritors(parent_class, n):
     for sub in subs:
         sub_res, _ = inheritors(sub, n)
         res['children'].append(sub_res)
-    if not res['children']:
-        del res['children']
+    # if not res['children']:
+    #     del res['children']
     if not res['methods']:
-        n.append(parent_class)
-        del res['methods']
+        if does_class_have_testmethods(inspect.getmro(parent_class)[1]):
+
+            variables = []
+            for v in vars(parent_class).keys():
+                if not v.startswith("__"):
+                    variables.append(v)
+
+            parents = []
+            pars = inspect.getmro(parent_class)[1:-3]
+            for p in pars:
+                if not str(p).split("'")[1].split('.')[-1].startswith("Base"):
+                    parents.append(p)
+                else:
+                    break
+
+            parent_tests = []
+            for p in parents:
+                for m in dict(p.__dict__).keys():
+                    if is_test_method(m):
+                        parent_tests.append(m)
+
+            n.append({'class:': parent_class,
+                      'vars': variables,
+                      'parents': parents,
+                      'parent_tests': parent_tests})
+
+        # del res['methods']
     return res, n
 
-res = {}
 no_methods = []
-a, no_methods = inheritors(unittest.TestCase, no_methods)
+a, no_methods = inheritors(testtools.testcase.TestCase, no_methods)
 pprint.pprint(a)
 print '\n----------------------------------------------------------'
+
 pprint.pprint(no_methods)
-f_res = json.dumps(str(a))
+print len(no_methods)
 
-output_file = 'res.json'
-with open(output_file, 'w') as outf:
-    outf.write(f_res)
+# f = []
+# f.append(a)
+# f1 = json.dumps(f, indent=4)
+# output_file = 'res.json'
+# with open(output_file, 'w') as outf:
+#     outf.writelines(f1)
+#     outf.write('\n')
 
-output_file = 'without_tests.txt'
-with open(output_file, 'w') as outf:
-    for n in no_methods:
-        outf.writelines(str(n))
-        outf.writelines("\n")
-
+# n_res = json.dumps(no_methods, indent=4)
+#
+# output_file = 'without_tests.txt'
+# with open(output_file, 'w') as outf:
+#     outf.writelines(n_res)
+#     outf.write('\n')
+#
