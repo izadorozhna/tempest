@@ -47,15 +47,36 @@ def inheritors(parent_class, n):
     res['class'] = parent_class
     res['children'] = []
     res['methods'] = []
+    res['vars'] = []
+    res['parent_tests'] = []
+    res['closest_parent'] = []
+    res['p_parent_tests'] = []
     all_test_methods = dict(parent_class.__dict__).keys()
     for method in all_test_methods:
         if is_test_method(method):
             res['methods'].append(method)
+    res['closest_parent'] = inspect.getmro(parent_class)[1]
+
+    if does_class_have_testmethods(inspect.getmro(parent_class)[1]):
+        for m in dict(inspect.getmro(parent_class)[1].__dict__).keys():
+            if is_test_method(m):
+                res['parent_tests'].append(m)
+        for v in vars(parent_class).items():
+            if not v[0].startswith("__"):
+                res['vars'].append({'var': v[0], 'value': v[1]})
+
+    if does_class_have_testmethods(inspect.getmro(parent_class)[2]):
+        for m in dict(inspect.getmro(parent_class)[2].__dict__).keys():
+            if is_test_method(m):
+                res['p_parent_tests'].append(m)
+
     for sub in subs:
         sub_res, _ = inheritors(sub, n)
         res['children'].append(sub_res)
     # if not res['children']:
     #     del res['children']
+    if not res['vars']:
+        del res['vars']
     if not res['methods']:
         if does_class_have_testmethods(inspect.getmro(parent_class)[1]):
 
@@ -91,8 +112,8 @@ a, no_methods = inheritors(testtools.testcase.TestCase, no_methods)
 pprint.pprint(a)
 print '\n----------------------------------------------------------'
 
-pprint.pprint(no_methods)
-print len(no_methods)
+# pprint.pprint(no_methods)
+# print len(no_methods)
 
 # f = []
 # f.append(a)
