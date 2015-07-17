@@ -588,6 +588,77 @@ class BaseTestCase(testtools.testcase.WithAttributes,
         self.assertTrue(len(list) > 0, msg)
 
 
+class Scenarios(BaseTestCase):
+
+    _resources = {}
+
+    @staticmethod
+    def load_tests(*args):
+        """
+        Wrapper for testscenarios to set the mandatory scenarios variable
+        only in case a real test loader is in place. Will be automatically
+        called in case the variable "load_tests" is set.
+        """
+        if getattr(args[0], 'suiteClass', None) is not None:
+            loader, standard_tests, pattern = args
+        else:
+            standard_tests, module, loader = args
+        for test in testtools.iterate_tests(standard_tests):
+            schema = getattr(test, '_schema', None)
+            if schema is not None:
+                setattr(test, 'scenarios',
+                        Scenarios.generate_scenario(schema))
+        return testscenarios.load_tests_apply_scenarios(*args)
+
+    @staticmethod
+    def generate_scenario(description):
+        """
+        Generates the test scenario list for a given description.
+
+        :param description: A file or dictionary with the following entries:
+            name (required) name for the api
+            http-method (required) one of HEAD,GET,PUT,POST,PATCH,DELETE
+            url (required) the url to be appended to the catalog url with '%s'
+                for each resource mentioned
+            resources: (optional) A list of resource names such as "server",
+                "flavor", etc. with an element for each '%s' in the url. This
+                method will call self.get_resource for each element when
+                constructing the positive test case template so negative
+                subclasses are expected to return valid resource ids when
+                appropriate.
+            json-schema (optional) A valid json schema that will be used to
+                create invalid data for the api calls. For "GET" and "HEAD",
+                the data is used to generate query strings appended to the url,
+                otherwise for the body of the http call.
+        """
+        LOG.debug(description)
+        generator = importutils.import_class(
+            CONF.negative.test_generator)()
+        generator.validate_schema(description)
+        schema = description.get("json-schema", None)
+        resources = description.get("resources", [])
+        scenario_list = []
+        expected_result = None
+        for resource in resources:
+            if isinstance(resource, dict):
+                expected_result = resource['expected_result']
+                resource = resource['name']
+            LOG.debug("Add resource to test %s" % resource)
+            scn_name = "inv_res_%s" % (resource)
+            scenario_list.append((scn_name, {"resource": (resource,
+                                                          str(uuid.uuid4())),
+                                             "expected_result": expected_result
+                                             }))
+        if schema is not None:
+            for scenario in generator.generate_scenarios(schema):
+                scenario_list.append((scenario['_scen-test_name'],
+                                      scenario))
+        LOG.debug(scenario_list)
+        return scenario_list
+
+
+
+
 class NegativeAutoTest(BaseTestCase):
 
     _resources = {}

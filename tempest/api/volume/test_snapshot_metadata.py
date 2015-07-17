@@ -15,20 +15,27 @@
 
 from testtools import matchers
 
+from tempest.api_schema.request.compute import snapshots_metadata
 from tempest.api.volume import base
 from tempest import test
 
 
-class SnapshotV2MetadataTestJSON(base.BaseVolumeTest):
+load_tests = test.Scenarios.load_tests
+
+
+class SnapshotMetadataTestJSON(base.BaseVolumeTest,
+                               test.Scenarios):
+
+    _schema = snapshots_metadata.api_version
 
     @classmethod
     def setup_clients(cls):
-        super(SnapshotV2MetadataTestJSON, cls).setup_clients()
+        super(SnapshotMetadataTestJSON, cls).setup_clients()
         cls.client = cls.snapshots_client
 
     @classmethod
     def resource_setup(cls):
-        super(SnapshotV2MetadataTestJSON, cls).resource_setup()
+        super(SnapshotMetadataTestJSON, cls).resource_setup()
         # Create a volume
         cls.volume = cls.create_volume()
         # Create a snapshot
@@ -38,7 +45,7 @@ class SnapshotV2MetadataTestJSON(base.BaseVolumeTest):
     def tearDown(self):
         # Update the metadata to {}
         self.client.update_snapshot_metadata(self.snapshot_id, {})
-        super(SnapshotV2MetadataTestJSON, self).tearDown()
+        super(SnapshotMetadataTestJSON, self).tearDown()
 
     @test.idempotent_id('a2f20f99-e363-4584-be97-bc33afb1a56c')
     def test_create_get_delete_snapshot_metadata(self):
@@ -106,6 +113,3 @@ class SnapshotV2MetadataTestJSON(base.BaseVolumeTest):
         body = self.client.show_snapshot_metadata(self.snapshot_id)
         self.assertThat(body.items(), matchers.ContainsAll(expect.items()))
 
-
-class SnapshotV1MetadataTestJSON(SnapshotV2MetadataTestJSON):
-    _api_version = 1
