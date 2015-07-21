@@ -30,7 +30,7 @@ LOG = logging.getLogger(__name__)
 class BaseVolumeTest(tempest.test.BaseTestCase):
     """Base test case class for all Cinder API tests."""
 
-    _api_version = 2
+    # _api_version = 2
     credentials = ['primary']
 
     @classmethod

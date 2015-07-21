@@ -14,6 +14,7 @@
 
 import os
 import sys
+import testscenarios
 
 from tempest.test_discover import plugins
 
@@ -39,6 +40,8 @@ def load_tests(loader, tests, pattern):
         else:
             suite.addTests(loader.discover(full_test_dir, pattern=pattern,
                            top_level_dir=base_path))
+
+    suite = testscenarios.load_tests_apply_scenarios(loader, suite, pattern)
 
     plugin_load_tests = ext_plugins.get_plugin_load_tests_tuple()
     if not plugin_load_tests:
