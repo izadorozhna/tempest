@@ -10,3 +10,4 @@ mox>=0.5.3
 mock>=1.2
 coverage>=3.6
 oslotest>=1.10.0 # Apache-2.0
+-e git+https://github.com/openstack/swift.git@master#egg=swift
