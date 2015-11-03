@@ -108,20 +108,6 @@ class ServersTestJSON(base.BaseV2ComputeTest):
         found = any([i for i in servers if i['id'] == self.server['id']])
         self.assertTrue(found)
 
-    @test.idempotent_id('cbc0f52f-05aa-492b-bdc1-84b575ca294b')
-    @testtools.skipUnless(CONF.validation.run_validation,
-                          'Instance validation tests are disabled.')
-    def test_verify_created_server_vcpus(self):
-        # Verify that the number of vcpus reported by the instance matches
-        # the amount stated by the flavor
-        flavor = self.flavors_client.show_flavor(self.flavor_ref)['flavor']
-        linux_client = remote_client.RemoteClient(
-            self.get_server_ip(self.server),
-            self.ssh_user,
-            self.password,
-            self.validation_resources['keypair']['private_key'])
-        self.assertEqual(flavor['vcpus'], linux_client.get_number_of_vcpus())
-
     @test.idempotent_id('ac1ad47f-984b-4441-9274-c9079b7a0666')
     @testtools.skipUnless(CONF.validation.run_validation,
                           'Instance validation tests are disabled.')
@@ -133,26 +119,6 @@ class ServersTestJSON(base.BaseV2ComputeTest):
             self.password,
             self.validation_resources['keypair']['private_key'])
         self.assertTrue(linux_client.hostname_equals_servername(self.name))
-
-    @test.idempotent_id('ed20d3fb-9d1f-4329-b160-543fbd5d9811')
-    def test_create_server_with_scheduler_hint_group(self):
-        # Create a server with the scheduler hint "group".
-        name = data_utils.rand_name('server_group')
-        policies = ['affinity']
-        body = self.server_groups_client.create_server_group(
-            name=name, policies=policies)['server_group']
-        group_id = body['id']
-        self.addCleanup(self.server_groups_client.delete_server_group,
-                        group_id)
-
-        hints = {'group': group_id}
-        server = self.create_test_server(scheduler_hints=hints,
-                                         wait_until='ACTIVE')
-
-        # Check a server is in the group
-        server_group = (self.server_groups_client.get_server_group(group_id)
-                        ['server_group'])
-        self.assertIn(server['id'], server_group['members'])
 
     @test.idempotent_id('0578d144-ed74-43f8-8e57-ab10dbf9b3c2')
     @testtools.skipUnless(CONF.service_available.neutron,
@@ -235,111 +201,6 @@ class ServersTestJSON(base.BaseV2ComputeTest):
                     netaddr.IPNetwork('19.80.0.0/24')]
         for address, network in zip(addr, networks):
             self.assertIn(address, network)
-
-
-class ServersWithSpecificFlavorTestJSON(base.BaseV2ComputeAdminTest):
-    disk_config = 'AUTO'
-
-    @classmethod
-    def setup_credentials(cls):
-        cls.prepare_instance_network()
-        super(ServersWithSpecificFlavorTestJSON, cls).setup_credentials()
-
-    @classmethod
-    def setup_clients(cls):
-        super(ServersWithSpecificFlavorTestJSON, cls).setup_clients()
-        cls.flavor_client = cls.os_adm.flavors_client
-        cls.client = cls.servers_client
-
-    @classmethod
-    def resource_setup(cls):
-        cls.set_validation_resources()
-
-        super(ServersWithSpecificFlavorTestJSON, cls).resource_setup()
-
-    @test.idempotent_id('b3c7bcfc-bb5b-4e22-b517-c7f686b802ca')
-    @testtools.skipUnless(CONF.validation.run_validation,
-                          'Instance validation tests are disabled.')
-    def test_verify_created_server_ephemeral_disk(self):
-        # Verify that the ephemeral disk is created when creating server
-
-        def create_flavor_with_extra_specs():
-            flavor_with_eph_disk_name = data_utils.rand_name('eph_flavor')
-            flavor_with_eph_disk_id = data_utils.rand_int_id(start=1000)
-            ram = 64
-            vcpus = 1
-            disk = 0
-
-            # Create a flavor with extra specs
-            flavor = (self.flavor_client.
-                      create_flavor(name=flavor_with_eph_disk_name,
-                                    ram=ram, vcpus=vcpus, disk=disk,
-                                    id=flavor_with_eph_disk_id,
-                                    ephemeral=1))['flavor']
-            self.addCleanup(flavor_clean_up, flavor['id'])
-
-            return flavor['id']
-
-        def create_flavor_without_extra_specs():
-            flavor_no_eph_disk_name = data_utils.rand_name('no_eph_flavor')
-            flavor_no_eph_disk_id = data_utils.rand_int_id(start=1000)
-
-            ram = 64
-            vcpus = 1
-            disk = 0
-
-            # Create a flavor without extra specs
-            flavor = (self.flavor_client.
-                      create_flavor(name=flavor_no_eph_disk_name,
-                                    ram=ram, vcpus=vcpus, disk=disk,
-                                    id=flavor_no_eph_disk_id))['flavor']
-            self.addCleanup(flavor_clean_up, flavor['id'])
-
-            return flavor['id']
-
-        def flavor_clean_up(flavor_id):
-            self.flavor_client.delete_flavor(flavor_id)
-            self.flavor_client.wait_for_resource_deletion(flavor_id)
-
-        flavor_with_eph_disk_id = create_flavor_with_extra_specs()
-        flavor_no_eph_disk_id = create_flavor_without_extra_specs()
-
-        admin_pass = self.image_ssh_password
-
-        server_no_eph_disk = self.create_test_server(
-            validatable=True,
-            wait_until='ACTIVE',
-            adminPass=admin_pass,
-            flavor=flavor_no_eph_disk_id)
-
-        # Get partition number of server without extra specs.
-        server_no_eph_disk = self.client.show_server(
-            server_no_eph_disk['id'])['server']
-        linux_client = remote_client.RemoteClient(
-            self.get_server_ip(server_no_eph_disk),
-            self.ssh_user,
-            admin_pass,
-            self.validation_resources['keypair']['private_key'])
-        partition_num = len(linux_client.get_partitions().split('\n'))
-
-        # Explicit server deletion necessary for Juno compatibility
-        self.client.delete_server(server_no_eph_disk['id'])
-
-        server_with_eph_disk = self.create_test_server(
-            validatable=True,
-            wait_until='ACTIVE',
-            adminPass=admin_pass,
-            flavor=flavor_with_eph_disk_id)
-
-        server_with_eph_disk = self.client.show_server(
-            server_with_eph_disk['id'])['server']
-        linux_client = remote_client.RemoteClient(
-            self.get_server_ip(server_with_eph_disk),
-            self.ssh_user,
-            admin_pass,
-            self.validation_resources['keypair']['private_key'])
-        partition_num_emph = len(linux_client.get_partitions().split('\n'))
-        self.assertEqual(partition_num + 1, partition_num_emph)
 
 
 class ServersTestManualDisk(ServersTestJSON):
