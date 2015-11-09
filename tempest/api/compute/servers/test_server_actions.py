@@ -124,12 +124,6 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         # The server should be power cycled
         self._test_reboot_server('HARD')
 
-    @decorators.skip_because(bug="1014647")
-    @test.idempotent_id('4640e3ef-a5df-482e-95a1-ceeeb0faa84d')
-    def test_reboot_server_soft(self):
-        # The server should be signaled to reboot gracefully
-        self._test_reboot_server('SOFT')
-
     def _rebuild_server_and_check(self, image_ref):
         rebuilt_server = (self.client.rebuild_server(self.server_id, image_ref)
                           ['server'])
