@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import json
 import time
 
 from tempest_lib.common.utils import misc
@@ -423,3 +424,194 @@ class NetworkClient(base.BaseNetworkClient):
     def delete_subnetpools(self, subnetpool_id):
         uri = '/subnetpools/%s' % subnetpool_id
         return self.delete_resource(uri)
+
+    def create_vip(self, name, protocol, protocol_port, subnet_id, pool_id):
+        post_body = {
+            "vip": {
+                "protocol": protocol,
+                "name": name,
+                "subnet_id": subnet_id,
+                "pool_id": pool_id,
+                "protocol_port": protocol_port
+            }
+        }
+        body = json.dumps(post_body)
+        uri = '%s/lb/vips' % (self.uri_prefix)
+        resp, body = self.post(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def create_pool(self, name, lb_method, protocol, subnet_id):
+        post_body = {
+            "pool": {
+                "protocol": protocol,
+                "name": name,
+                "subnet_id": subnet_id,
+                "lb_method": lb_method
+            }
+        }
+        body = json.dumps(post_body)
+        uri = '%s/lb/pools' % (self.uri_prefix)
+        resp, body = self.post(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def show_vip(self, uuid):
+        uri = '%s/lb/vips/%s' % (self.uri_prefix, uuid)
+        resp, body = self.get(uri)
+        body = json.loads(body)
+        return resp, body
+
+    def delete_vip(self, uuid):
+        uri = '%s/lb/vips/%s' % (self.uri_prefix, uuid)
+        resp, body = self.delete(uri)
+        return resp, body
+
+    def delete_pool(self, uuid):
+        uri = '%s/lb/pools/%s' % (self.uri_prefix, uuid)
+        resp, body = self.delete(uri)
+        return resp, body
+
+    def update_vip(self, vip_id, new_name):
+        put_body = {
+            "vip": {
+                "name": new_name,
+            }
+        }
+        body = json.dumps(put_body)
+        uri = '%s/lb/vips/%s' % (self.uri_prefix, vip_id)
+        resp, body = self.put(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def update_pool(self, pool_id, new_name):
+        put_body = {
+            "pool": {
+                "name": new_name,
+            }
+        }
+        body = json.dumps(put_body)
+        uri = '%s/lb/pools/%s' % (self.uri_prefix, pool_id)
+        resp, body = self.put(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def list_pools(self):
+        uri = '%s/lb/pools' % (self.uri_prefix)
+        resp, body = self.get(uri)
+        body = json.loads(body)
+        return resp, body
+
+    def show_pool(self, uuid):
+        uri = '%s/lb/pools/%s' % (self.uri_prefix, uuid)
+        resp, body = self.get(uri)
+        body = json.loads(body)
+        return resp, body
+
+    def list_members(self):
+        uri = '%s/lb/members' % (self.uri_prefix)
+        resp, body = self.get(uri)
+        body = json.loads(body)
+        return resp, body
+
+    def create_member(self, address, protocol_port, pool_id):
+        post_body = {
+            "member": {
+                "protocol_port": protocol_port,
+                "pool_id": pool_id,
+                "address": address
+            }
+        }
+        body = json.dumps(post_body)
+        uri = '%s/lb/members' % (self.uri_prefix)
+        resp, body = self.post(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def show_member(self, uuid):
+        uri = '%s/lb/members/%s' % (self.uri_prefix, uuid)
+        resp, body = self.get(uri)
+        body = json.loads(body)
+        return resp, body
+
+    def delete_member(self, uuid):
+        uri = '%s/lb/members/%s' % (self.uri_prefix, uuid)
+        resp, body = self.delete(uri)
+        return resp, body
+
+    def update_member(self, admin_state_up, member_id):
+        put_body = {
+            "member": {
+                "admin_state_up": admin_state_up
+            }
+        }
+        body = json.dumps(put_body)
+        uri = '%s/lb/members/%s' % (self.uri_prefix, member_id)
+        resp, body = self.put(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def list_health_monitors(self):
+        uri = '%s/lb/health_monitors' % (self.uri_prefix)
+        resp, body = self.get(uri)
+        body = json.loads(body)
+        return resp, body
+
+    def create_health_monitor(self, delay, max_retries, Type, timeout):
+        post_body = {
+            "health_monitor": {
+                "delay": delay,
+                "max_retries": max_retries,
+                "type": Type,
+                "timeout": timeout
+            }
+        }
+        body = json.dumps(post_body)
+        uri = '%s/lb/health_monitors' % (self.uri_prefix)
+        resp, body = self.post(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def show_health_monitor(self, uuid):
+        uri = '%s/lb/health_monitors/%s' % (self.uri_prefix, uuid)
+        resp, body = self.get(uri)
+        body = json.loads(body)
+        return resp, body
+
+    def delete_health_monitor(self, uuid):
+        uri = '%s/lb/health_monitors/%s' % (self.uri_prefix, uuid)
+        resp, body = self.delete(uri)
+        return resp, body
+
+    def update_health_monitor(self, admin_state_up, uuid):
+        put_body = {
+            "health_monitor": {
+                "admin_state_up": admin_state_up
+            }
+        }
+        body = json.dumps(put_body)
+        uri = '%s/lb/health_monitors/%s' % (self.uri_prefix, uuid)
+        resp, body = self.put(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def associate_health_monitor_with_pool(self, health_monitor_id,
+                                           pool_id):
+        post_body = {
+            "health_monitor": {
+                "id": health_monitor_id,
+            }
+        }
+        body = json.dumps(post_body)
+        uri = '%s/lb/pools/%s/health_monitors' % (self.uri_prefix,
+                                                  pool_id)
+        resp, body = self.post(uri, body=body)
+        body = json.loads(body)
+        return resp, body
+
+    def disassociate_health_monitor_with_pool(self, health_monitor_id,
+                                              pool_id):
+        uri = '%s/lb/pools/%s/health_monitors/%s' % (self.uri_prefix, pool_id,
+                                                     health_monitor_id)
+        resp, body = self.delete(uri)
+        return resp, body

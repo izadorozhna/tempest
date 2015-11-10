@@ -82,6 +82,10 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
         cls.networks = []
         cls.subnets = []
         cls.ports = []
+        cls.pools = []
+        cls.vips = []
+        cls.members = []
+        cls.health_monitors = []
         cls.routers = []
         cls.floating_ips = []
         cls.metering_labels = []
@@ -122,6 +126,24 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
             for network in cls.networks:
                 cls._try_delete_resource(cls.networks_client.delete_network,
                                          network['id'])
+
+            for health_monitor in cls.health_monitors:
+                cls._try_delete_resource(
+                    cls.networks_client.delete_health_monitor,
+                    health_monitor['id'])
+
+            for member in cls.members:
+                cls._try_delete_resource(cls.networks_client.delete_member,
+                                         member['id'])
+
+            for vip in cls.vips:
+                cls._try_delete_resource(cls.networks_client.delete_vip,
+                                         vip['id'])
+
+            for pool in cls.pools:
+                cls._try_delete_resource(cls.networks_client.delete_pool,
+                                         pool['id'])
+
         super(BaseNetworkTest, cls).resource_cleanup()
 
     @classmethod
@@ -257,6 +279,44 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
             except lib_exc.NotFound:
                 pass
         cls.client.delete_router(router['id'])
+
+    @classmethod
+    def create_pool(cls, name, lb_method, protocol, subnet):
+        """Wrapper utility that returns a test pool."""
+        resp, body = cls.client.create_pool(name, lb_method, protocol,
+                                            subnet['id'])
+        pool = body['pool']
+        cls.pools.append(pool)
+        return pool
+
+    @classmethod
+    def create_vip(cls, name, protocol, protocol_port, subnet, pool):
+        """Wrapper utility that returns a test vip."""
+        resp, body = cls.client.create_vip(name, protocol, protocol_port,
+                                           subnet['id'], pool['id'])
+        vip = body['vip']
+        cls.vips.append(vip)
+        return vip
+
+    @classmethod
+    def create_member(cls, protocol_port, pool):
+        """Wrapper utility that returns a test member."""
+        resp, body = cls.client.create_member("10.0.9.46",
+                                              protocol_port,
+                                              pool['id'])
+        member = body['member']
+        cls.members.append(member)
+        return member
+
+    @classmethod
+    def create_health_monitor(cls, delay, max_retries, Type, timeout):
+        """Wrapper utility that returns a test health monitor."""
+        resp, body = cls.client.create_health_monitor(delay,
+                                                      max_retries,
+                                                      Type, timeout)
+        health_monitor = body['health_monitor']
+        cls.health_monitors.append(health_monitor)
+        return health_monitor
 
 
 class BaseAdminNetworkTest(BaseNetworkTest):
