@@ -110,7 +110,3 @@ class RoutersNegativeTest(base.BaseRouterTest):
         router = data_utils.rand_name('non_exist_router')
         self.assertRaises(lib_exc.NotFound, self.client.delete_router,
                           router)
-
-
-class RoutersNegativeIpV6Test(RoutersNegativeTest):
-    _ip_version = 6

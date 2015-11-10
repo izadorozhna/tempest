@@ -231,8 +231,3 @@ class SecGroupTest(base.BaseSecGroupTest):
         sec_group_rule = rule_create_body['security_group_rule']
         self.assertEqual(sec_group_rule['direction'], direction)
         self.assertEqual(int(sec_group_rule['protocol']), protocol)
-
-
-class SecGroupIPv6Test(SecGroupTest):
-    _ip_version = 6
-    _tenant_network_cidr = CONF.network.tenant_network_v6_cidr
