@@ -169,6 +169,7 @@ class LbaasHttpsTestJSON(base.BaseNetworkTest):
             super(LbaasHttpsTestJSON, cls).tearDownClass()
 
 
+    @test.idempotent_id('3c8223d8-a15e-4d2b-bf48-8feaa1230895')
     def test_lbaas_by_vip_ip(self):
         self.setup_lb_infra('TCP', 3, 1, 1, 22)
         vip_addr = self.test_data['vips'][0]['address']
